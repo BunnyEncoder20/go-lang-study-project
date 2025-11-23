@@ -74,8 +74,8 @@ func showcaseMaps() {
 }
 
 func main() {
-	// showcaseArrays()
-	// showcaseSlices()
-	// showcaseMaps()
+	showcaseArrays()
+	showcaseSlices()
+	showcaseMaps()
 	performanceTest()
 }
