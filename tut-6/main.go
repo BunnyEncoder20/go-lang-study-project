@@ -8,8 +8,12 @@ import (
 )
 
 var (
-	dbData = [5]string{"id1", "id2", "id3", "id4", "id5"}
-	wg     = sync.WaitGroup{} // waitGroup init
+	// The results slice must be protected by a Mutex.
+	results []int
+	dbData  = []int{42, 99, 10, 75, 51}
+	wg      sync.WaitGroup
+	mu      sync.Mutex // The Mutex to guard access to the 'results' slice
+	rwmu    sync.RWMutex
 )
 
 func dbCall(i int) {
@@ -17,14 +21,6 @@ func dbCall(i int) {
 	delay := rand.Float32() * 2000 // times 2000 means the delay will be anywhere between 0-2 seconds
 	time.Sleep(time.Duration(delay) * time.Millisecond)
 	fmt.Printf("The results from the database are: %v\n", dbData[i])
-}
-
-func dbConcurrentCall(i int) {
-	// Simulator for a dbCall()
-	delay := rand.Float32() * 2000 // times 2000 means the delay will be anywhere between 0-2 seconds
-	time.Sleep(time.Duration(delay) * time.Millisecond)
-	fmt.Printf("The results from the database are: %v\n", dbData[i])
-	wg.Done()
 }
 
 func sequenctialDBcalls() {
@@ -35,6 +31,18 @@ func sequenctialDBcalls() {
 	fmt.Printf("\nThe total execution time: %v\n\n", time.Since(t0))
 }
 
+func dbConcurrentCall(i int) {
+	// Simulator for a dbCall()
+	delay := rand.Float32() * 2000 // times 2000 means the delay will be anywhere between 0-2 seconds
+	time.Sleep(time.Duration(delay) * time.Millisecond)
+	fmt.Printf("The results from the database are: %v\n", dbData[i])
+	mu.Lock() // lock the data struct before making edits
+	results = append(results, dbData[i])
+	mu.Unlock() // Unlock the data struct afterwards
+
+	wg.Done()
+}
+
 func concurrentDBcalls() {
 	t0 := time.Now()
 	for i := range dbData {
@@ -43,6 +51,7 @@ func concurrentDBcalls() {
 	}
 	wg.Wait()
 	fmt.Printf("\nThe total execution time: %v\n\n", time.Since(t0))
+	fmt.Printf("The Results are %v\n\n", results)
 }
 
 func main() {
